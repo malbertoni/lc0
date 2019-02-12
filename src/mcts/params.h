@@ -98,6 +98,12 @@ class SearchParams {
   float GetMinimumKLDGainPerNode() const {
     return options_.Get<float>(kMinimumKLDGainPerNode.GetId());
   }
+  int GetUCIHelpThreshold() const {
+    return options_.Get<int>(kUCIHelpThreshold.GetId());
+  }
+  float GetUCIHelpBoost() const {
+    return options_.Get<float>(kUCIHelpBoost.GetId());
+  }
 
   // Search parameter IDs.
   static const OptionId kMiniBatchSizeId;
@@ -131,6 +137,8 @@ class SearchParams {
   static const OptionId kHistoryFillId;
   static const OptionId kMinimumKLDGainPerNode;
   static const OptionId kKLDGainAverageInterval;
+  static const OptionId kUCIHelpThreshold;
+  static const OptionId kUCIHelpBoost;
 
  private:
   const OptionsDict& options_;
