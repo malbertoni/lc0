@@ -186,11 +186,13 @@ const OptionId SearchParams::kKLDGainAverageInterval{
     "kldgain-average-interval", "KLDGainAverageInterval",
     "Used to decide how frequently to evaluate the average KLDGainPerNode to "
     "check the MinimumKLDGainPerNode, if specified."};
-const OptionId SearchParams::kUCIHelpThreshold{
+const OptionId SearchParams::kUCIHelpPathId{
+    "uci-help-path", "UCIHelpPath",
+    "Path to uci chess engine to help."};
+const OptionId SearchParams::kUCIHelpThresholdId{
     "uci-help-threshold", "UCIHelpThreshold",
-    "How many visits a node gets before the UCI Helper program is called. "
-    "Zero disables the feature"};
-const OptionId SearchParams::kUCIHelpBoost{
+    "How many visits a node gets before the UCI Helper program is called."};
+const OptionId SearchParams::kUCIHelpBoostId{
     "uci-help-boost", "UCIHelpBoost",
     "How much to boost P, in percentage"};
 
