@@ -104,6 +104,9 @@ class SearchParams {
   int GetUCIHelpThreshold() const {
     return options_.Get<int>(kUCIHelpThresholdId.GetId());
   }
+  int GetUCIHelpDepth() const {
+    return options_.Get<int>(kUCIHelpDepthId.GetId());
+  }
   float GetUCIHelpBoost() const {
     return options_.Get<float>(kUCIHelpBoostId.GetId());
   }
@@ -142,6 +145,7 @@ class SearchParams {
   static const OptionId kKLDGainAverageInterval;
   static const OptionId kUCIHelpPathId;
   static const OptionId kUCIHelpThresholdId;
+  static const OptionId kUCIHelpDepthId;
   static const OptionId kUCIHelpBoostId;
 
  private:

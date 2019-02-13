@@ -192,6 +192,9 @@ const OptionId SearchParams::kUCIHelpPathId{
 const OptionId SearchParams::kUCIHelpThresholdId{
     "uci-help-threshold", "UCIHelpThreshold",
     "How many visits a node gets before the UCI Helper program is called."};
+const OptionId SearchParams::kUCIHelpDepthId{
+    "uci-help-depth", "UCIHelpDepth",
+    "Depth the uci engine will search."};
 const OptionId SearchParams::kUCIHelpBoostId{
     "uci-help-boost", "UCIHelpBoost",
     "How much to boost P, in percentage"};
