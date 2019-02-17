@@ -685,7 +685,6 @@ void Search::OpenAuxEngine() {
       }
     }
   }
-  LOGFILE << "aolsen ";
   if (current_position_fen_ == "") {
     current_position_fen_ = ChessBoard::kStartposFen; // TODO
   }
@@ -699,8 +698,6 @@ void Search::OpenAuxEngine() {
 
   auxengine_threads_.emplace_back([this]() { AuxEngineWorker(); });
   auxengine_ready_ = true;
-
-  LOGFILE << "aolsen";
 }
 
 void Search::RunBlocking(size_t threads) {
@@ -1353,8 +1350,6 @@ void Search::AuxEngineWorker() {
       auxengine_queue_.pop();
     }
     // release lock
-
-    LOGFILE << "aolsen uciworker: " << n->GetOwnEdge()->GetMove().as_string();
     DoAuxEngine(n);
   }
   LOGFILE << "aolsen uciworker end";
@@ -1365,9 +1360,7 @@ void Search::DoAuxEngine(Node* n) {
   for (Node* n2 = n; n2 != root_node_; n2 = n2->GetParent()) {
     depth++;
   }
-  LOGFILE << "aolsen DoAuxEngine depth " << depth;
   std::string s = "";
-  //bool flip = played_history_.IsBlackToMove() ^ (depth % 2 == 1);
   bool flip = played_history_.IsBlackToMove() ^ (depth % 2 == 0);
   for (Node* n2 = n; n2 != root_node_; n2 = n2->GetParent()) {
     s = n2->GetOwnEdge()->GetMove(flip).as_string() + " " + s;
@@ -1375,13 +1368,12 @@ void Search::DoAuxEngine(Node* n) {
   }
   LOGFILE << "aolsen add pv=" << s;
   s = current_uci_ + " " + s;
-  LOGFILE << "aolsen " << s;
   auxengine_os_ << s << std::endl;
   auxengine_os_ << "go depth " << params_.GetAuxEngineDepth() << std::endl;
   std::string line;
   std::string token;
   while(std::getline(auxengine_is_, line)) {
-    LOGFILE << "aolsen auxengine:" + line;
+    //LOGFILE << "aolsen auxengine:" + line;
     std::istringstream iss(line);
     iss >> token >> std::ws;
     if (token == "bestmove") {
@@ -1389,9 +1381,7 @@ void Search::DoAuxEngine(Node* n) {
       break;
     }
   }
-  //flip = played_history_.IsBlackToMove() ^ (depth % 2 == 1);
   flip = played_history_.IsBlackToMove() ^ (depth % 2 == 0);
-  LOGFILE << "aolsen thismove:" << n->GetOwnEdge()->GetMove(flip).as_string();
   auto bestmove = Move(token, !flip);
   LOGFILE << "aolsen bestanswer:" << token << " " << bestmove.as_nn_index();
 
@@ -1407,7 +1397,6 @@ void Search::DoAuxEngine(Node* n) {
     }
     // Modifying P invalidates best child logic.
     n->InvalidateBestChild();
-    LOGFILE << "aolsen edges " << edge.GetMove(!flip).as_string() << " " << edge.GetMove().as_nn_index() << " " << edge.GetP()*100;
   }
 }
 
@@ -1477,8 +1466,6 @@ void SearchWorker::DoBackupUpdateSingleNode(
         !n->auxengine_done_ &&
         !n->IsTerminal()) {
       n->auxengine_done_ = true;
-      LOGFILE << "aolsen DoBackup depth " << depth << " " << n->GetOwnEdge()->GetMove().as_string();
-      //DoAuxEngine(n, depth);
       std::lock_guard<std::mutex> lock(search_->auxengine_mutex_);
       search_->auxengine_queue_.push(n);
       search_->auxengine_cv_.notify_one();
