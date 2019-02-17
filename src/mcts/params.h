@@ -110,6 +110,9 @@ class SearchParams {
   float GetAuxEngineBoost() const {
     return options_.Get<float>(kAuxEngineBoostId.GetId());
   }
+  std::string GetAuxEngineOptions() const {
+    return options_.Get<std::string>(kAuxEngineOptionsId.GetId());
+  }
 
   // Search parameter IDs.
   static const OptionId kMiniBatchSizeId;
@@ -147,6 +150,7 @@ class SearchParams {
   static const OptionId kAuxEngineThresholdId;
   static const OptionId kAuxEngineDepthId;
   static const OptionId kAuxEngineBoostId;
+  static const OptionId kAuxEngineOptionsId;
 
  private:
   const OptionsDict& options_;
