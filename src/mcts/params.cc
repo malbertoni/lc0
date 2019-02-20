@@ -189,6 +189,10 @@ const OptionId SearchParams::kKLDGainAverageInterval{
 const OptionId SearchParams::kAuxEnginePathId{
     "auxengine-path", "AuxEnginePath",
     "Path to auxiliary chess engine."};
+const OptionId SearchParams::kAuxEngineOptionsId{
+    "auxengine-options", "AuxEngineOptions",
+    "Semicolon separated list of UCI options for the auxiliary engine\n"
+    "e.g. Hash=1024;Threads=1"};
 const OptionId SearchParams::kAuxEngineThresholdId{
     "auxengine-threshold", "AuxEngineThreshold",
     "The auxiliary engine is called when a node reaches this many visits"};
@@ -197,11 +201,11 @@ const OptionId SearchParams::kAuxEngineDepthId{
     "Depth for the auxiliary engine to search."};
 const OptionId SearchParams::kAuxEngineBoostId{
     "auxengine-boost", "AuxEngineBoost",
-    "How much to boost Policy, in percentage"};
-const OptionId SearchParams::kAuxEngineOptionsId{
-    "auxengine-options", "AuxEngineOptions",
-    "Semicolon separated list of UCI options for the auxiliary engine\n"
-    "e.g. 'Hash=1024;Threads=1'"};
+    "How much to add to Policy, in percentage"};
+const OptionId SearchParams::kAuxEngineFollowPvDepthId{
+    "auxengine-follow-pv-depth", "AuxEngineFollowPvDepth",
+    "Add this many plies of the auxengine's PV at a time. "
+    "Higher is faster, but deeper PV moves are less accurate"};
 
 void SearchParams::Populate(OptionsParser* options) {
   // Here the uci optimized defaults" are set.
@@ -247,10 +251,11 @@ void SearchParams::Populate(OptionsParser* options) {
   options->Add<IntOption>(kUCIHelpThreshold, 0, 1000000) = 0;
   options->Add<FloatOption>(kUCIHelpBoost, 0.0f, 100.0f) = 10.0f;
   options->Add<StringOption>(kAuxEnginePathId);
+  options->Add<StringOption>(kAuxEngineOptionsId);
   options->Add<IntOption>(kAuxEngineThresholdId, 1, 1000000) = 100;
   options->Add<IntOption>(kAuxEngineDepthId, 1, 100) = 15;
   options->Add<FloatOption>(kAuxEngineBoostId, 0.0f, 1000.0f) = 50.0f;
-  options->Add<StringOption>(kAuxEngineOptionsId);
+  options->Add<IntOption>(kAuxEngineFollowPvDepthId, 1, 20) = 3;
 }
 
 SearchParams::SearchParams(const OptionsDict& options)

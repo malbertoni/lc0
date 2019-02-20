@@ -101,6 +101,9 @@ class SearchParams {
   std::string GetAuxEnginePath() const {
     return options_.Get<std::string>(kAuxEnginePathId.GetId());
   }
+  std::string GetAuxEngineOptions() const {
+    return options_.Get<std::string>(kAuxEngineOptionsId.GetId());
+  }
   int GetAuxEngineThreshold() const {
     return options_.Get<int>(kAuxEngineThresholdId.GetId());
   }
@@ -110,8 +113,8 @@ class SearchParams {
   float GetAuxEngineBoost() const {
     return options_.Get<float>(kAuxEngineBoostId.GetId());
   }
-  std::string GetAuxEngineOptions() const {
-    return options_.Get<std::string>(kAuxEngineOptionsId.GetId());
+  int GetAuxEngineFollowPvDepth() const {
+    return options_.Get<int>(kAuxEngineFollowPvDepthId.GetId());
   }
 
   // Search parameter IDs.
@@ -147,10 +150,11 @@ class SearchParams {
   static const OptionId kMinimumKLDGainPerNode;
   static const OptionId kKLDGainAverageInterval;
   static const OptionId kAuxEnginePathId;
+  static const OptionId kAuxEngineOptionsId;
   static const OptionId kAuxEngineThresholdId;
   static const OptionId kAuxEngineDepthId;
   static const OptionId kAuxEngineBoostId;
-  static const OptionId kAuxEngineOptionsId;
+  static const OptionId kAuxEngineFollowPvDepthId;
 
  private:
   const OptionsDict& options_;
