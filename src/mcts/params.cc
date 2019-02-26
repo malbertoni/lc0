@@ -256,6 +256,8 @@ void SearchParams::Populate(OptionsParser* options) {
   options->Add<IntOption>(kAuxEngineDepthId, 1, 100) = 15;
   options->Add<FloatOption>(kAuxEngineBoostId, 0.0f, 100.0f) = 50.0f;
   options->Add<IntOption>(kAuxEngineFollowPvDepthId, 1, 20) = 4;
+
+  options->HideOption(kLogLiveStatsId);
 }
 
 SearchParams::SearchParams(const OptionsDict& options)
