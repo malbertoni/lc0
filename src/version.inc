@@ -2,3 +2,4 @@
 #define LC0_VERSION_MINOR 22
 #define LC0_VERSION_PATCH 0
 #define LC0_VERSION_POSTFIX "fish-0.22-v0.8"
+
