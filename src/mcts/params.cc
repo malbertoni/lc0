@@ -186,8 +186,8 @@ const OptionId SearchParams::kKLDGainAverageInterval{
     "kldgain-average-interval", "KLDGainAverageInterval",
     "Used to decide how frequently to evaluate the average KLDGainPerNode to "
     "check the MinimumKLDGainPerNode, if specified."};
-const OptionId SearchParams::kAuxEnginePathId{
-    "auxengine-path", "AuxEnginePath",
+const OptionId SearchParams::kAuxEngineFileId{
+    "auxengine-file", "AuxEngineFile",
     "Path to auxiliary chess engine."};
 const OptionId SearchParams::kAuxEngineOptionsId{
     "auxengine-options", "AuxEngineOptions",
@@ -254,6 +254,7 @@ void SearchParams::Populate(OptionsParser* options) {
   options->Add<IntOption>(kUCIHelpThreshold, 0, 1000000) = 0;
   options->Add<FloatOption>(kUCIHelpBoost, 0.0f, 100.0f) = 10.0f;
   options->Add<StringOption>(kAuxEnginePathId);
+  options->Add<StringOption>(kAuxEngineFileId);
   options->Add<StringOption>(kAuxEngineOptionsId);
   options->Add<IntOption>(kAuxEngineThresholdId, 1, 1000000) = 100;
   options->Add<IntOption>(kAuxEngineDepthId, 1, 100) = 15;
