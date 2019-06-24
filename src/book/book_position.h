@@ -79,7 +79,7 @@ public:
   Position& operator=(const Position&) = delete;
 
   // FEN string input/output
-  Position& set(const std::string& fenStr, bool isChess960, StateInfo* si, Thread* th);
+  Position& set(const std::string& fenStr, bool isChess960, StateInfo* si);
   Position& set(const std::string& code, Color c, StateInfo* si);
   const std::string fen() const;
 
@@ -257,8 +257,7 @@ template<PieceType Pt> inline const Square* Position::squares(Color c) const {
 }
 
 template<PieceType Pt> inline Square Position::square(Color c) const {
-	int piece = make_piece(c, Pt);
-	assert(pieceCount[piece] == 1);
+  assert(pieceCount[make_piece(c, Pt)] == 1);
   return pieceList[make_piece(c, Pt)][0];
 }
 
