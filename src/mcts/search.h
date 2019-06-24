@@ -108,6 +108,9 @@ class Search {
                                                         int count) const;
   EdgeAndNode GetBestChildWithTemperature(Node* parent,
                                           float temperature) const;
+  EdgeAndNode GetBestChildWithLevel(Node* parent,
+									int level) const;
+  float CpScore(EdgeAndNode &edge) const;
 
   int64_t GetTimeSinceStart() const;
   int64_t GetTimeToDeadline() const;

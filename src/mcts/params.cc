@@ -186,6 +186,9 @@ const OptionId SearchParams::kKLDGainAverageInterval{
     "kldgain-average-interval", "KLDGainAverageInterval",
     "Used to decide how frequently to evaluate the average KLDGainPerNode to "
     "check the MinimumKLDGainPerNode, if specified."};
+const OptionId SearchParams::kSkillLevelId{
+    "skill-level", "Skill Level",
+    "If set to less than 20 will handicap move selection."};
 
 void SearchParams::Populate(OptionsParser* options) {
   // Here the uci optimized defaults" are set.
@@ -220,6 +223,8 @@ void SearchParams::Populate(OptionsParser* options) {
   options->Add<BoolOption>(kStickyEndgamesId) = true;
   options->Add<BoolOption>(kSyzygyFastPlayId) = true;
   options->Add<IntOption>(kMultiPvId, 1, 500) = 1;
+  options->Add<IntOption>(kSkillLevelId, 0, 20) = 20;
+
   std::vector<std::string> score_type = {"centipawn", "centipawn_2018",
                                          "win_percentage", "Q"};
   options->Add<ChoiceOption>(kScoreTypeId, score_type) = "centipawn";

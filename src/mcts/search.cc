@@ -41,6 +41,8 @@
 #include "neural/encoder.h"
 #include "utils/fastmath.h"
 #include "utils/random.h"
+#include "book/types.h"
+#include "book/misc.h"
 
 namespace lczero {
 
@@ -61,7 +63,16 @@ std::string SearchLimits::DebugString() const {
   }
   return ss.str();
 }
+  // Skill structure is used to implement strength limit
+  struct Skill {
+    explicit Skill(int l) : level(l) {}
+    bool enabled() const { return level < 20; }
+	bool time_to_pick(int depth) const { return depth / Brainfish::ONE_PLY == 1 + level; }
+    Move pick_best(size_t multiPV);
 
+    int level;
+  };
+	
 Search::Search(const NodeTree& tree, Network* network,
                BestMoveInfo::Callback best_move_callback,
                ThinkingInfo::Callback info_callback, const SearchLimits& limits,
@@ -515,7 +526,7 @@ void Search::EnsureBestMoveKnown() REQUIRES(nodes_mutex_)
     REQUIRES(counters_mutex_) {
   if (bestmove_is_sent_) return;
   if (!root_node_->HasChildren()) return;
-
+  Skill skill(params_.GetLevel());
   float temperature = params_.GetTemperature();
   const int cutoff_move = params_.GetTemperatureCutoffMove();
   const int moves = played_history_.Last().GetGamePly() / 2;
@@ -529,11 +540,13 @@ void Search::EnsureBestMoveKnown() REQUIRES(nodes_mutex_)
                      params_.GetTempDecayMoves();
     }
   }
-
-  final_bestmove_ = temperature
+  if (skill.enabled()) {
+	  final_bestmove_ = GetBestChildWithLevel(root_node_, skill.level);
+  } else {
+	  final_bestmove_ = temperature
                         ? GetBestChildWithTemperature(root_node_, temperature)
                         : GetBestChildNoTemperature(root_node_);
-
+  }
   if (final_bestmove_.HasNode() && final_bestmove_.node()->HasChildren()) {
     final_pondermove_ = GetBestChildNoTemperature(final_bestmove_.node());
   }
@@ -643,6 +656,65 @@ EdgeAndNode Search::GetBestChildWithTemperature(Node* parent,
   return {};
 }
 
+float Search::CpScore(EdgeAndNode &edge) const
+{
+	const auto default_q = -root_node_->GetQ();
+	return 295 * edge.GetQ(default_q) /
+                       (1 - 0.976953126 * std::pow(edge.GetQ(default_q), 14));
+}
+	// Returns a child chosen according to weighted-by-temperature visit count.
+EdgeAndNode Search::GetBestChildWithLevel(Node* parent,
+										  int level) const {
+  MoveList root_limit;
+  static Brainfish::PRNG rng(Brainfish::now()); // PRNG sequence should be non-deterministic
+  if (parent == root_node_) {
+    PopulateRootMoveLimit(&root_limit);
+  }
+  CERR << "picking with level " << level << std::endl;
+  float score;
+  EdgeAndNode best = GetBestChildNoTemperature(parent);
+  float topScore = CpScore(best);
+  EdgeAndNode worst = best;
+  float worstScore = 10000000.0;
+  int weakness = 120 - 2 * level;
+  int count = 0;
+  for (auto edge : parent->Edges()) {
+    if (parent == root_node_ && !root_limit.empty() &&
+        std::find(root_limit.begin(), root_limit.end(), edge.GetMove()) ==
+            root_limit.end()) {
+      continue;
+    }
+	count++;
+	score = CpScore(edge);
+	if (score < worstScore) {
+		worstScore = score;
+		worst = edge;
+	}
+  }
+  CERR << "worstScore " << worstScore << " topScore " << topScore << " count " << count << std::endl;
+  if (worstScore == topScore)
+	  return best;
+  int delta = std::min((int)(topScore - worstScore), (int)Brainfish::PawnValueMg);
+
+  int maxScore = -Brainfish::VALUE_INFINITE;
+
+  for (auto edge : parent->Edges()) {
+    if (parent == root_node_ && !root_limit.empty() &&
+        std::find(root_limit.begin(), root_limit.end(), edge.GetMove()) ==
+            root_limit.end()) {
+      continue;
+    }
+	float score = CpScore(edge);
+	int push = (weakness *int(topScore - score) +
+				delta * (rng.rand<unsigned>() % weakness)) / 128;
+	if (score + push >= maxScore) {
+		maxScore = score + push;
+		best = edge;
+	}
+  }
+  CERR << "delta " << delta << "maxScore " << maxScore << std::endl;
+  return best;
+}
 void Search::StartThreads(size_t how_many) {
   Mutex::Lock lock(threads_mutex_);
   // First thread is a watchdog thread.

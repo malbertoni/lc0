@@ -88,6 +88,7 @@ class SearchParams {
   bool GetStickyEndgames() const { return kStickyEndgames; }
   bool GetSyzygyFastPlay() const { return kSyzygyFastPlay; }
   int GetMultiPv() const { return options_.Get<int>(kMultiPvId.GetId()); }
+  int GetLevel() const {return options_.Get<int>(kSkillLevelId.GetId());}
   std::string GetScoreType() const {
     return options_.Get<std::string>(kScoreTypeId.GetId());
   }
@@ -131,7 +132,8 @@ class SearchParams {
   static const OptionId kHistoryFillId;
   static const OptionId kMinimumKLDGainPerNode;
   static const OptionId kKLDGainAverageInterval;
-
+  static const OptionId kSkillLevelId;
+  
  private:
   const OptionsDict& options_;
   // Cached parameter values. Values have to be cached if either:
