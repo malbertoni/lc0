@@ -26,7 +26,8 @@
 */
 
 #include "chess/board.h"
-
+#include "book/bitboard.h"
+#include "book/book_position.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
@@ -423,7 +424,9 @@ void InitializeMagicBitboards() {
         kBishopMagicNumbers[square].as_int();
   }
 #endif
-
+  Brainfish::PSQT::init();
+  Brainfish::Bitboards::init();
+  Brainfish::Position::init();
   // Build attacks tables.
   BuildAttacksTable(rook_magic_params, rook_attacks_table, kRookDirections);
   BuildAttacksTable(bishop_magic_params, bishop_attacks_table,

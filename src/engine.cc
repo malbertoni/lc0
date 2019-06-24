@@ -74,6 +74,9 @@ const OptionId kSyzygyTablebaseId{
     "List of Syzygy tablebase directories, list entries separated by system "
     "separator (\";\" for Windows, \":\" for Linux).",
     's'};
+const OptionId kOpeningBookId{
+    "book-file", "BookFile",
+	"Path to Opening Book to be used "};
 const OptionId kSpendSavedTimeId{
     "immediate-time-use", "ImmediateTimeUse",
     "Fraction of time saved by smart pruning, which is added to the budget to "
@@ -82,6 +85,8 @@ const OptionId kSpendSavedTimeId{
     "all future moves."};
 const OptionId kPonderId{"ponder", "Ponder",
                          "This option is ignored. Here to please chess GUIs."};
+const OptionId kOwnBookId{"own-book", "OwnBook",
+                         "lczero will use its own book."};
 // Warning! When changed, also change number 30 in the help below!
 const size_t kAvgMovesPerPosition = 30;
 const OptionId kRamLimitMbId{
@@ -131,6 +136,7 @@ void EngineController::PopulateOptions(OptionsParser* options) {
   NetworkFactory::PopulateOptions(options);
   options->Add<IntOption>(kThreadsOptionId, 1, 128) = kDefaultThreads;
   options->Add<IntOption>(kNNCacheSizeId, 0, 999999999) = 200000;
+  options->Add<BoolOption>(kOwnBookId) = false;
   SearchParams::Populate(options);
 
   options->Add<FloatOption>(kSlowMoverId, 0.0f, 100.0f) = 1.0f;
@@ -138,6 +144,7 @@ void EngineController::PopulateOptions(OptionsParser* options) {
   options->Add<FloatOption>(kTimeMidpointMoveId, 1.0f, 100.0f) = 51.5f;
   options->Add<FloatOption>(kTimeSteepnessId, 1.0f, 100.0f) = 7.0f;
   options->Add<StringOption>(kSyzygyTablebaseId);
+  options->Add<StringOption>(kOpeningBookId);
   // Add "Ponder" option to signal to GUIs that we support pondering.
   // This option is currently not used by lc0 in any way.
   options->Add<BoolOption>(kPonderId) = true;
@@ -265,6 +272,19 @@ void EngineController::UpdateFromUciOptions() {
     }
   }
 
+  // Opening book
+  std::string book_path = options_.Get<std::string>(kOpeningBookId.GetId());
+  if (!book_path.empty() && book_path != book_path_) {
+	  opening_book_ = std::make_unique<Brainfish::PolyBook>();
+	  opening_book_->set_best_book_move(false);
+	  CERR << "Loading opening book from " << book_path;
+    if (!opening_book_->init(book_path)) {
+      CERR << "Failed to load opening book!";
+      opening_book_ = nullptr;
+    } else {
+      book_path_ = book_path;
+    }
+  }
   // Network.
   const auto network_configuration = NetworkFactory::BackendConfiguration(options_);
   if (network_configuration_ != network_configuration) {
@@ -284,7 +304,9 @@ void EngineController::EnsureReady() {
 }
 
 void EngineController::NewGame() {
-  // In case anything relies upon defaulting to default position and just calls
+
+
+	// In case anything relies upon defaulting to default position and just calls
   // newgame and goes straight into go.
   move_start_time_ = std::chrono::steady_clock::now();
   SharedLock lock(busy_mutex_);
@@ -321,6 +343,13 @@ void EngineController::SetupPosition(
   if (!is_same_game) time_spared_ms_ = 0;
 }
 
+Move::Promotion promomap[] = {
+	Move::Promotion::None,
+	Move::Promotion::Queen,
+	Move::Promotion::Rook,
+	Move::Promotion::Bishop,
+	Move::Promotion::Knight
+};
 void EngineController::Go(const GoParams& params) {
   // TODO: should consecutive calls to go be considered to be a continuation and
   // hence have the same start time like this behaves, or should we check start
@@ -331,6 +360,27 @@ void EngineController::Go(const GoParams& params) {
 
   ThinkingInfo::Callback info_callback(info_callback_);
   BestMoveInfo::Callback best_move_callback(best_move_callback_);
+
+  Brainfish::Move bookMove;
+  std::string fen;
+  if (!tree_) {
+	  fen = ChessBoard::kStartposFen;
+  } else {
+	  fen = current_position_->fen;
+  }
+  bool own_book = options_.Get<bool>(kOwnBookId.GetId());
+  std::vector<std::string> moves(current_position_->moves);
+  if (!params.ponder && own_book && opening_book_ != nullptr &&
+	  (bookMove = opening_book_->probe(fen, moves)) != 
+	  Brainfish::MOVE_NONE) {
+		  BoardSquare to = {static_cast<uint8_t>(bookMove & ((1 << 6)-1))};
+		  BoardSquare from = {static_cast<uint8_t>((bookMove >> 6) & ((1 << 6)-1))};
+		  uint8_t promoval = (bookMove >> 12) & 3;
+		  Move::Promotion promotion = promomap[promoval];
+		  Move bestmove = {from, to, promotion};
+		  best_move_callback_(bestmove);
+		  return;
+  }
 
   // Setting up current position, now that it's known whether it's ponder or
   // not.

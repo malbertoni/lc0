@@ -36,6 +36,7 @@
 #include "utils/mutex.h"
 #include "utils/optional.h"
 #include "utils/optionsparser.h"
+#include "book/polybook.h"
 
 // CUDNN eval
 // comment/disable this to enable tensor flow path
@@ -100,12 +101,14 @@ class EngineController {
   std::unique_ptr<Search> search_;
   std::unique_ptr<NodeTree> tree_;
   std::unique_ptr<SyzygyTablebase> syzygy_tb_;
+  std::unique_ptr<Brainfish::PolyBook> opening_book_;
   std::unique_ptr<Network> network_;
   NNCache cache_;
 
   // Store current TB and network settings to track when they change so that
   // they are reloaded.
   std::string tb_paths_;
+  std::string book_path_;
   NetworkFactory::BackendConfiguration network_configuration_;
 
   // The current position as given with SetPosition. For normal (ie. non-ponder)
