@@ -541,6 +541,11 @@ void Search::EnsureBestMoveKnown() REQUIRES(nodes_mutex_)
     }
   }
   if (skill.enabled()) {
+	if (moves < 3) {
+	  float skilltemp = 39.2 - 2*skill.level;
+	  float childtemp = std::max(skilltemp, temperature);
+	  final_bestmove_ = GetBestChildWithTemperature(root_node_, childtemp);
+	} else
 	  final_bestmove_ = GetBestChildWithLevel(root_node_, skill.level);
   } else {
 	  final_bestmove_ = temperature
@@ -589,6 +594,41 @@ std::vector<EdgeAndNode> Search::GetBestChildrenNoTemperature(Node* parent,
 EdgeAndNode Search::GetBestChildNoTemperature(Node* parent) const {
   auto res = GetBestChildrenNoTemperature(parent, 1);
   return res.empty() ? EdgeAndNode() : res.front();
+}
+
+float Search::GetBestChildCutoff(Node *parent) const {
+  MoveList root_limit;
+  if (parent == root_node_) {
+    PopulateRootMoveLimit(&root_limit);
+  }
+
+  std::vector<float> cumulative_sums;
+  float max_n = 0.0;
+  const float offset = params_.GetTemperatureVisitOffset();
+  float max_eval = -1.0f;
+  const float fpu = GetFpu(params_, parent, parent == root_node_);
+
+  for (auto edge : parent->Edges()) {
+    if (parent == root_node_ && !root_limit.empty() &&
+        std::find(root_limit.begin(), root_limit.end(), edge.GetMove()) ==
+            root_limit.end()) {
+      continue;
+    }
+    if (edge.GetN() + offset > max_n) {
+      max_n = edge.GetN() + offset;
+      max_eval = edge.GetQ(fpu);
+    }
+  }
+
+  // No move had enough visits for temperature, so use default child criteria
+  if (max_n <= 0.0f) return -2.0;
+
+  // TODO(crem) Simplify this code when samplers.h is merged.
+
+  /*
+   * Want to permit mistakes
+   */
+  return max_eval - params_.GetTemperatureWinpctCutoff() / 35.0f;
 }
 
 // Returns a child chosen according to weighted-by-temperature visit count.
@@ -670,7 +710,7 @@ EdgeAndNode Search::GetBestChildWithLevel(Node* parent,
   if (parent == root_node_) {
     PopulateRootMoveLimit(&root_limit);
   }
-  CERR << "picking with level " << level << std::endl;
+  //CERR << "picking with level " << level << std::endl;
   float score;
   EdgeAndNode best = GetBestChildNoTemperature(parent);
   float topScore = CpScore(best);
@@ -678,12 +718,15 @@ EdgeAndNode Search::GetBestChildWithLevel(Node* parent,
   float worstScore = 10000000.0;
   int weakness = 120 - 2 * level;
   int count = 0;
+  const float fpu = GetFpu(params_, parent, parent == root_node_);
+  float min_eval = GetBestChildCutoff(parent);
   for (auto edge : parent->Edges()) {
     if (parent == root_node_ && !root_limit.empty() &&
         std::find(root_limit.begin(), root_limit.end(), edge.GetMove()) ==
             root_limit.end()) {
       continue;
     }
+    if (edge.GetQ(fpu) < min_eval) continue;
 	count++;
 	score = CpScore(edge);
 	if (score < worstScore) {
@@ -691,7 +734,7 @@ EdgeAndNode Search::GetBestChildWithLevel(Node* parent,
 		worst = edge;
 	}
   }
-  CERR << "worstScore " << worstScore << " topScore " << topScore << " count " << count << std::endl;
+  //CERR << "worstScore " << worstScore << " topScore " << topScore << " count " << count << std::endl;
   if (worstScore == topScore)
 	  return best;
   int delta = std::min((int)(topScore - worstScore), (int)Brainfish::PawnValueMg);
@@ -705,14 +748,20 @@ EdgeAndNode Search::GetBestChildWithLevel(Node* parent,
       continue;
     }
 	float score = CpScore(edge);
+    if (edge.GetQ(fpu) < min_eval) {
+		//CERR << "skip " << score;
+		continue;
+	}
 	int push = (weakness *int(topScore - score) +
 				delta * (rng.rand<unsigned>() % weakness)) / 128;
+	//CERR << " push " << push;
 	if (score + push >= maxScore) {
 		maxScore = score + push;
+		//CERR << " new Max " << maxScore;
 		best = edge;
 	}
   }
-  CERR << "delta " << delta << "maxScore " << maxScore << std::endl;
+  //CERR << "delta " << delta << "maxScore " << maxScore << std::endl;
   return best;
 }
 void Search::StartThreads(size_t how_many) {
