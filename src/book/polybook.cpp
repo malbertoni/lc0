@@ -452,7 +452,7 @@ Move PolyBook::probe(const std::string& fen, std::vector<std::string> &moves)
 {
 	Position pos;
 	StateListPtr states(new std::deque<StateInfo>(1));
-	pos.set(fen, false, &states->back(), NULL);
+	pos.set(fen, false, &states->back());
     for (const auto& move : moves) {
 		states->emplace_back();
 		auto m = UCI::to_move(pos, move);
