@@ -173,7 +173,7 @@ SearchLimits EngineController::PopulateSearchLimits(
   limits.infinite = params.infinite || params.ponder;
   if (params.movetime && !limits.infinite) {
     limits.search_deadline = start_time + std::chrono::milliseconds(
-                                              *params.movetime - move_overhead);
+		*params.movetime);
   }
   if (params.nodes) limits.visits = *params.nodes;
   const int ram_limit = options_.Get<int>(kRamLimitMbId.GetId());
@@ -355,7 +355,7 @@ void EngineController::Go(const GoParams& params) {
   // hence have the same start time like this behaves, or should we check start
   // time hasn't changed since last call to go and capture the new start time
   // now?
-  const auto start_time = move_start_time_;
+  const auto start_time = std::chrono::steady_clock::now();
   go_params_ = params;
 
   ThinkingInfo::Callback info_callback(info_callback_);
