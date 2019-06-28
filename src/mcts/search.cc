@@ -702,10 +702,18 @@ float Search::CpScore(EdgeAndNode &edge) const
 	return 295 * edge.GetQ(default_q) /
                        (1 - 0.976953126 * std::pow(edge.GetQ(default_q), 14));
 }
-	// Returns a child chosen according to weighted-by-temperature visit count.
+
+struct EdgeCp {
+	EdgeCp(float cp, EdgeAndNode edge) : ec_cp(cp), ec_edge(edge) {};
+	float ec_cp;
+	EdgeAndNode ec_edge;
+};
+
+// Returns a child chosen according to weighted-by-temperature visit count.
 EdgeAndNode Search::GetBestChildWithLevel(Node* parent,
 										  int level) const {
   MoveList root_limit;
+  std::vector<EdgeCp> candidates;
   static Brainfish::PRNG rng(Brainfish::now()); // PRNG sequence should be non-deterministic
   if (parent == root_node_) {
     PopulateRootMoveLimit(&root_limit);
@@ -717,7 +725,9 @@ EdgeAndNode Search::GetBestChildWithLevel(Node* parent,
   EdgeAndNode worst = best;
   float worstScore = 10000000.0;
   int weakness = 120 - 2 * level;
-  int count = 0;
+  // limit CP loss
+  int max_delta = 415 - 20 * level;
+  int delta;
   const float fpu = GetFpu(params_, parent, parent == root_node_);
   float min_eval = GetBestChildCutoff(parent);
   for (auto edge : parent->Edges()) {
@@ -727,8 +737,11 @@ EdgeAndNode Search::GetBestChildWithLevel(Node* parent,
       continue;
     }
     if (edge.GetQ(fpu) < min_eval) continue;
-	count++;
 	score = CpScore(edge);
+	delta = (int)(topScore - score);
+	if (delta > max_delta)
+		continue;
+	candidates.emplace_back(score, edge);
 	if (score < worstScore) {
 		worstScore = score;
 		worst = edge;
@@ -737,28 +750,19 @@ EdgeAndNode Search::GetBestChildWithLevel(Node* parent,
   //CERR << "worstScore " << worstScore << " topScore " << topScore << " count " << count << std::endl;
   if (worstScore == topScore)
 	  return best;
-  int delta = std::min((int)(topScore - worstScore), (int)Brainfish::PawnValueMg);
+  delta = std::min((int)(topScore - worstScore), (int)Brainfish::PawnValueMg);
 
   int maxScore = -Brainfish::VALUE_INFINITE;
 
-  for (auto edge : parent->Edges()) {
-    if (parent == root_node_ && !root_limit.empty() &&
-        std::find(root_limit.begin(), root_limit.end(), edge.GetMove()) ==
-            root_limit.end()) {
-      continue;
-    }
-	float score = CpScore(edge);
-    if (edge.GetQ(fpu) < min_eval) {
-		//CERR << "skip " << score;
-		continue;
-	}
+  for (auto candidate : candidates) {
+	score = candidate.ec_cp;
 	int push = (weakness *int(topScore - score) +
 				delta * (rng.rand<unsigned>() % weakness)) / 128;
 	//CERR << " push " << push;
 	if (score + push >= maxScore) {
 		maxScore = score + push;
 		//CERR << " new Max " << maxScore;
-		best = edge;
+		best = candidate.ec_edge;
 	}
   }
   //CERR << "delta " << delta << "maxScore " << maxScore << std::endl;
