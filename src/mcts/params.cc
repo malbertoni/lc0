@@ -251,9 +251,6 @@ void SearchParams::Populate(OptionsParser* options) {
   options->Add<IntOption>(kKLDGainAverageInterval, 1, 10000000) = 100;
   options->Add<FloatOption>(kMinimumKLDGainPerNode, 0.0f, 1.0f) = 0.0f;
   options->HideOption(kLogLiveStatsId);
-  options->Add<IntOption>(kUCIHelpThreshold, 0, 1000000) = 0;
-  options->Add<FloatOption>(kUCIHelpBoost, 0.0f, 100.0f) = 10.0f;
-  options->Add<StringOption>(kAuxEnginePathId);
   options->Add<StringOption>(kAuxEngineFileId);
   options->Add<StringOption>(kAuxEngineOptionsId);
   options->Add<IntOption>(kAuxEngineThresholdId, 1, 1000000) = 100;
